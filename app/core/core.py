@@ -3,8 +3,9 @@ from rich.console import Console
 from app.brain.brain import Brain
 from app.context.context import ContextManager
 from app.discovery.discovery import DiscoveryEngine
+from app.execution.engine import ExecutionEngine
 from app.planner.planner import Planner
-from app.tools.tool_manager import ToolManager
+from app.skills.manager import SkillManager
 
 console = Console()
 
@@ -18,9 +19,15 @@ class KaraCore:
         # Core components
         self.brain = Brain()
         self.planner = Planner()
-        self.tools = ToolManager()
+        self.skills = SkillManager()
         self.context = ContextManager()
         self.discovery = DiscoveryEngine()
+
+        # Execution Engine
+        self.execution = ExecutionEngine(
+            skill_manager=self.skills,
+            context=self.context,
+        )
 
         # Discover the current system
         console.log("[yellow]Scanning system...[/yellow]")
@@ -51,37 +58,33 @@ class KaraCore:
             if not command:
                 continue
 
-            # Store conversation
-            self.context.add_message(command)
-
             # Exit
             if command.lower() in ("exit", "quit"):
                 console.print("[yellow]Goodbye![/yellow]")
                 break
 
+            # Store conversation
+            self.context.add_message(command)
+
             try:
                 # Understand the command
                 task = self.brain.process(command)
 
+                # Store intent in context
                 self.context.set_last_intent(task.get("intent"))
 
                 # Create execution plan
                 plan = self.planner.create_plan(task)
 
                 # Execute the plan
-                for step in plan:
+                results = self.execution.execute(plan)
 
-                    intent = step.get("intent")
-
-                    self.context.set_last_tool(intent)
-
-                    # Remember active application
-                    if intent == "open_application":
-                        self.context.set_application(step.get("target"))
-
-                    response = self.tools.execute(step)
-
-                    console.print(f"[green]{response}[/green]")
+                # Display results
+                for result in results:
+                    if result.success:
+                        console.print(f"[green]{result.message}[/green]")
+                    else:
+                        console.print(f"[bold red]{result.message}[/bold red]")
 
             except Exception as error:
                 console.print(f"[bold red]Error:[/bold red] {error}")
