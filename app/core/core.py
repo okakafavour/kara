@@ -11,12 +11,14 @@ console = Console()
 
 
 class KaraCore:
-    """Main coordinator for the Kara AI Assistant."""
+    """
+    Main coordinator for the Kara AI Assistant.
+    """
 
     def __init__(self):
         console.log("[bold green]Initializing Kara Core...[/bold green]")
 
-        # Core components
+        # Core Components
         self.brain = Brain()
         self.planner = Planner()
         self.skills = SkillManager()
@@ -29,7 +31,7 @@ class KaraCore:
             context=self.context,
         )
 
-        # Discover the current system
+        # Discover current system
         console.log("[yellow]Scanning system...[/yellow]")
 
         try:
@@ -47,18 +49,19 @@ class KaraCore:
         console.log("[bold blue]Kara Core Ready[/bold blue]")
 
     def start(self):
-        """Start Kara's interactive command loop."""
+        """
+        Start Kara's interactive command loop.
+        """
 
         console.print("\n[bold magenta]Kara is ready![/bold magenta]\n")
 
         while True:
+
             command = input("kara > ").strip()
 
-            # Ignore empty commands
             if not command:
                 continue
 
-            # Exit
             if command.lower() in ("exit", "quit"):
                 console.print("[yellow]Goodbye![/yellow]")
                 break
@@ -70,21 +73,35 @@ class KaraCore:
                 # Understand the command
                 task = self.brain.process(command)
 
-                # Store intent in context
+                # Remember the user's intent
                 self.context.set_last_intent(task.get("intent"))
 
-                # Create execution plan
+                # Create an execution plan
                 plan = self.planner.create_plan(task)
+
+                console.print(
+                    f"\n[cyan]Goal:[/cyan] {plan.goal}"
+                )
 
                 # Execute the plan
                 results = self.execution.execute(plan)
 
                 # Display results
                 for result in results:
+
                     if result.success:
-                        console.print(f"[green]{result.message}[/green]")
+                        console.print(
+                            f"[green]✓ {result.message}[/green]"
+                        )
                     else:
-                        console.print(f"[bold red]{result.message}[/bold red]")
+                        console.print(
+                            f"[bold red]✗ {result.message}[/bold red]"
+                        )
+
+                # Mark plan complete
+                plan.completed = True
 
             except Exception as error:
-                console.print(f"[bold red]Error:[/bold red] {error}")
+                console.print(
+                    f"[bold red]Error:[/bold red] {error}"
+                )
