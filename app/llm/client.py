@@ -1,6 +1,7 @@
 from ollama import Client
 
 from app.llm.models import LLMRequest, LLMResponse
+from app.llm.prompts import PromptBuilder
 
 
 class LLMClient:
@@ -25,13 +26,12 @@ class LLMClient:
                 messages=[
                     {
                         "role": "system",
-                        "content": (
-                            "You are the reasoning engine for Kara AI."
-                        ),
+                        "content": PromptBuilder.SYSTEM_PROMPT,
+                          
                     },
                     {
                         "role": "user",
-                        "content": request.prompt,
+                        "content": PromptBuilder.user_prompt(request.prompt),
                     },
                 ],
             )

@@ -1,75 +1,40 @@
 from rich.console import Console
 
+from app.brain.rule_parser import RuleParser
+from app.brain.llm_reasoner import LLMReasoner
+from app.task.normalizer import TaskNormalizer
+
 console = Console()
 
 
 class Brain:
     """
-    Responsible for understanding
-    what the user wants.
+    Kara's central reasoning coordinator.
+
+    It first tries the fast rule parser.
+    If no rule matches, it asks the LLM.
+    Every task is normalized before being returned.
     """
 
     def __init__(self):
         console.log("[green]Brain initialized[/green]")
 
+        self.rule_parser = RuleParser()
+        self.reasoner = LLMReasoner()
+
     def process(self, command: str) -> dict:
+        """
+        Convert a natural language command into
+        Kara's standard task format.
+        """
 
-        original = command.strip()
-        command = original.lower()
+        # Try the fast rule parser first
+        task = self.rule_parser.parse(command)
 
-        # ------------------------
-        # OPEN APPLICATION
-        # ------------------------
+        if task.get("intent") != "unknown":
+            return TaskNormalizer.normalize(task)
 
-        if command.startswith("open "):
+        # Fall back to the LLM
+        task = self.reasoner.reason(command)
 
-            app = original[5:].strip()
-
-            return {
-                "intent": "open_application",
-                "entities": {
-                    "application": app
-                }
-            }
-
-        # ------------------------
-        # REMEMBER
-        # ------------------------
-
-        if command.startswith("remember "):
-
-            sentence = original[9:].strip()
-
-            if " is " in sentence:
-
-                key, value = sentence.split(" is ", 1)
-
-                key = key.replace("my", "").strip()
-
-                return {
-                    "intent": "remember",
-                    "entities": {
-                        "key": key,
-                        "value": value.strip()
-                    }
-                }
-
-        # ------------------------
-        # RECALL
-        # ------------------------
-
-        if command.startswith("what is my "):
-
-            key = original[len("what is my "):].strip()
-
-            return {
-                "intent": "recall",
-                "entities": {
-                    "key": key
-                }
-            }
-
-        return {
-            "intent": "unknown",
-            "entities": {}
-        }
+        return TaskNormalizer.normalize(task)

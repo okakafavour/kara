@@ -1,34 +1,55 @@
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Error, sync_playwright
+
+from app.skills.browser.actions import BrowserActions
 
 
 class BrowserEngine:
     """
-    Controls a Playwright browser instance.
-
-    The engine keeps one browser alive so Kara can
-    continue working in the same browsing session.
+    Controls a persistent Playwright browser session.
     """
 
     def __init__(self):
         self.playwright = None
         self.browser = None
         self.page = None
+        self.actions = None
 
     def start(self):
         """
-        Start the browser if it isn't already running.
+        Start the browser if necessary.
         """
 
-        if self.browser is not None:
+        if self.browser is None:
+
+            print("\n===== STARTING PLAYWRIGHT =====")
+
+            self.playwright = sync_playwright().start()
+
+            self.browser = self.playwright.firefox.launch(
+                headless=False
+            )
+
+            self.page = self.browser.new_page()
+
+            self.actions = BrowserActions(self)
+
+            print("Playwright:", self.playwright)
+            print("Browser:", self.browser)
+            print("Page:", self.page)
+            print("===============================\n")
+
             return
 
-        self.playwright = sync_playwright().start()
+        if self.page is None:
 
-        self.browser = self.playwright.firefox.launch(
-            headless=False
-        )
+            print("\n===== CREATING NEW PAGE =====")
 
-        self.page = self.browser.new_page()
+            self.page = self.browser.new_page()
+
+            self.actions = BrowserActions(self)
+
+            print("Page:", self.page)
+            print("=============================\n")
 
     def goto(self, url: str):
         """
@@ -40,12 +61,22 @@ class BrowserEngine:
         if not url.startswith(("http://", "https://")):
             url = "https://" + url
 
-        self.page.goto(url)
+        try:
+
+            self.page.goto(url)
+
+        except Error as error:
+
+            print("\nPlaywright Error:", error)
+            print("Restarting browser...\n")
+
+            self.close()
+
+            self.start()
+
+            self.page.goto(url)
 
     def title(self):
-        """
-        Return the current page title.
-        """
 
         if self.page:
             return self.page.title()
@@ -53,9 +84,6 @@ class BrowserEngine:
         return ""
 
     def current_url(self):
-        """
-        Return the current page URL.
-        """
 
         if self.page:
             return self.page.url
@@ -63,16 +91,20 @@ class BrowserEngine:
         return ""
 
     def close(self):
-        """
-        Close the browser cleanly.
-        """
 
-        if self.browser:
-            self.browser.close()
+        try:
+            if self.browser:
+                self.browser.close()
+        except Exception:
+            pass
 
-        if self.playwright:
-            self.playwright.stop()
+        try:
+            if self.playwright:
+                self.playwright.stop()
+        except Exception:
+            pass
 
         self.browser = None
         self.page = None
         self.playwright = None
+        self.actions = None

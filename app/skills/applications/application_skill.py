@@ -1,30 +1,64 @@
+import shutil
 import subprocess
 
-from rich.console import Console
-
-console = Console()
+from app.skills.base import BaseSkill
 
 
-class ApplicationSkill:
+class ApplicationSkill(BaseSkill):
+    """
+    Skill responsible for launching desktop applications.
+    """
 
-    APPS = {
+    APPLICATIONS = {
         "vscode": "code",
         "code": "code",
         "firefox": "firefox",
+        "chrome": "google-chrome",
+        "google chrome": "google-chrome",
+        "chromium": "chromium",
         "terminal": "gnome-terminal",
-        "files": "xdg-open ~",
-        "file manager": "xdg-open ~",
+        "files": "nautilus",
     }
 
-    def open(self, target: str):
+    @property
+    def name(self) -> str:
+        return "Application"
 
-        command = self.APPS.get(target)
+    @property
+    def description(self) -> str:
+        return "Launches desktop applications."
 
-        if command is None:
+    @property
+    def intents(self) -> list[str]:
+        return [
+            "open_application",
+        ]
+
+    def can_handle(self, task: dict) -> bool:
+        return task.get("intent") == "open_application"
+
+    def execute(self, task: dict):
+
+        entities = task.get("entities", {})
+
+        target = entities.get("application", "").lower()
+
+        executable = self.APPLICATIONS.get(target)
+
+        if executable is None:
             return f"I don't know how to open '{target}'."
 
+        if shutil.which(executable) is None:
+            return f"{target.title()} is not installed."
+
         try:
-            subprocess.Popen(command, shell=True)
+            subprocess.Popen(
+                [executable],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+
             return f"Opening {target}..."
-        except Exception as e:
-            return str(e)
+
+        except Exception as error:
+            return f"Failed to open {target}: {error}"
