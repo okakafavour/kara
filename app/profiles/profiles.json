@@ -1,0 +1,31 @@
+{
+  "browser_profiles": [
+    {
+      "name": "Development",
+      "browser": "firefox",
+      "email": "okakafavour81@gmail.com",
+      "startup_url": "https://github.com"
+    },
+    {
+      "name": "Fiverr",
+      "browser": "chrome",
+      "email": "okakafavour81@gmail.com",
+      "startup_url": "https://www.fiverr.com/inbox"
+    }
+  ],
+
+  "workspaces": [
+    {
+      "name": "Backend Development",
+      "browser_profile": "Development",
+      "applications": [
+        "firefox",
+        "code",
+        "terminal"
+      ],
+      "startup_urls": [
+        "https://github.com"
+      ]
+    }
+  ]
+}

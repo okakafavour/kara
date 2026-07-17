@@ -17,6 +17,27 @@ class RuleParser:
         command = original.lower()
 
         # ------------------------
+        # START WORKSPACE
+        # ------------------------
+
+        workspace_commands = [
+            "start work",
+            "start workspace",
+            "start backend development",
+            "open my workspace",
+            "begin work",
+        ]
+
+        if command in workspace_commands:
+
+            return {
+                "intent": "start_workspace",
+                "entities": {
+                    "workspace": "Backend Development"
+                }
+            }
+
+        # ------------------------
         # OPEN APPLICATION
         # ------------------------
 
@@ -67,6 +88,10 @@ class RuleParser:
                     "key": key
                 }
             }
+
+        # ------------------------
+        # UNKNOWN
+        # ------------------------
 
         return {
             "intent": "unknown",
