@@ -6,6 +6,7 @@ from app.discovery.discovery import DiscoveryEngine
 from app.execution.engine import ExecutionEngine
 from app.planner.planner import Planner
 from app.skills.manager import SkillManager
+from app.session.manager import SessionManager
 
 console = Console()
 
@@ -24,11 +25,13 @@ class KaraCore:
         self.skills = SkillManager()
         self.context = ContextManager()
         self.discovery = DiscoveryEngine()
+        self.session = SessionManager()
 
         # Execution Engine
         self.execution = ExecutionEngine(
             skill_manager=self.skills,
             context=self.context,
+            session=self.session,
         )
 
         # Discover current system

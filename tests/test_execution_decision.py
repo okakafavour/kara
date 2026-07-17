@@ -6,8 +6,12 @@ from app.session.manager import SessionManager
 from app.skills.manager import SkillManager
 
 print("=" * 40)
-print("Testing Execution Engine")
+print("Execution Decision Test")
 print("=" * 40)
+
+session = SessionManager()
+
+session.application_started("firefox")
 
 plan = ExecutionPlan(
     goal="Open Firefox",
@@ -24,20 +28,10 @@ plan = ExecutionPlan(
 engine = ExecutionEngine(
     skill_manager=SkillManager(),
     context=ContextManager(),
-    session=SessionManager(),
+    session=session,
 )
 
 results = engine.execute(plan)
 
-print("\nGoal:")
-print(plan.goal)
-
-print("\nCompleted:")
-print(plan.completed)
-
-print("\nResults:")
-
 for result in results:
     print(result)
-
-print("\nExecution Test Complete")

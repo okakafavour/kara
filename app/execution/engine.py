@@ -1,34 +1,57 @@
-from dataclasses import dataclass
-
 from rich.console import Console
 
-from app.planner.models.plan import ExecutionPlan
-from app.planner.models.step import Step
+from app.decision.engine import DecisionEngine
+from app.execution.models.result import ExecutionResult
 
 console = Console()
 
 
-@dataclass
-class ExecutionResult:
-    """
-    Result of executing one step.
-    """
-
-    step: Step
-    success: bool
-    message: str
-
-
 class ExecutionEngine:
     """
-    Executes an ExecutionPlan one step at a time.
+    Executes an execution plan.
+
+    Before executing any step, the DecisionEngine is asked to
+    evaluate the plan. If a decision rule blocks execution,
+    the engine returns immediately with the reason.
     """
 
-    def __init__(self, skill_manager, context):
+    def __init__(
+        self,
+        skill_manager,
+        context,
+        session,
+    ):
         self.skill_manager = skill_manager
         self.context = context
+        self.session = session
 
-    def execute(self, plan: ExecutionPlan) -> list[ExecutionResult]:
+        # Think before executing
+        self.decision_engine = DecisionEngine()
+
+    def execute(self, plan):
+
+        # ---------------------------------
+        # Evaluate the plan first
+        # ---------------------------------
+
+        decision = self.decision_engine.evaluate(
+            plan,
+            self.session,
+        )
+
+        if not decision.proceed:
+
+            return [
+                ExecutionResult(
+                    step=None,
+                    success=False,
+                    message=decision.question,
+                )
+            ]
+
+        # ---------------------------------
+        # Execute the plan
+        # ---------------------------------
 
         results = []
 
@@ -36,43 +59,70 @@ class ExecutionEngine:
 
             console.log(f"[cyan]Executing:[/cyan] {step.intent}")
 
-            self.context.set_last_tool(step.intent)
+            skill = self.skill_manager.find_skill(step.intent)
 
-            try:
-
-                response = self.skill_manager.execute(
-                    {
-                        "intent": step.intent,
-                        "entities": step.entities,
-                        "metadata": step.metadata,
-                    }
-                )
-
-                step.status = "completed"
-
-                results.append(
-                    ExecutionResult(
-                        step=step,
-                        success=True,
-                        message=response,
-                    )
-                )
-
-            except Exception as error:
-
-                step.status = "failed"
+            if skill is None:
 
                 results.append(
                     ExecutionResult(
                         step=step,
                         success=False,
-                        message=str(error),
+                        message=f"No skill found for '{step.intent}'",
                     )
                 )
 
-                break
+                continue
 
-        if all(step.status == "completed" for step in plan.steps):
-            plan.completed = True
+            message = skill.execute(
+                {
+                    "intent": step.intent,
+                    "entities": step.entities,
+                    "metadata": step.metadata,
+                }
+            )
+
+            # ---------------------------------
+            # Update session
+            # ---------------------------------
+
+            self.update_session(step)
+
+            step.status = "completed"
+
+            results.append(
+                ExecutionResult(
+                    step=step,
+                    success=True,
+                    message=message,
+                )
+            )
 
         return results
+
+    def update_session(self, step):
+        """
+        Keep Kara's session state synchronized with what
+        was actually executed.
+        """
+
+        if step.intent == "open_application":
+
+            app = step.entities["application"]
+
+            self.session.application_started(app)
+
+        elif step.intent == "browser_open":
+
+            url = step.entities["url"]
+
+            self.session.browser_tab(
+                browser="firefox",
+                title=url,
+                url=url,
+            )
+
+        elif step.intent == "start_workspace":
+
+            workspace = step.entities["workspace"]
+
+            self.session.workspace_started(workspace)
