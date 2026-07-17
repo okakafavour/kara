@@ -1,30 +1,27 @@
 from rich.console import Console
 
+from app.planner.goal_planner import GoalPlanner
 from app.planner.models.plan import ExecutionPlan
-from app.planner.models.step import Step
 
 console = Console()
 
 
 class Planner:
     """
-    Converts a task into an execution plan.
+    Coordinates the planning process.
+
+    The Planner delegates planning to the GoalPlanner,
+    which expands high-level tasks into executable steps.
     """
 
     def __init__(self):
         console.log("[green]Planner initialized[/green]")
 
+        self.goal_planner = GoalPlanner()
+
     def create_plan(self, task: dict) -> ExecutionPlan:
+        """
+        Convert a task into an execution plan.
+        """
 
-        goal = task["intent"]
-
-        step = Step(
-            intent=task["intent"],
-            entities=task.get("entities", {}),
-            metadata=task.get("metadata", {}),
-        )
-
-        return ExecutionPlan(
-            goal=goal,
-            steps=[step],
-        )
+        return self.goal_planner.expand(task)

@@ -1,9 +1,6 @@
-import importlib
-import inspect
-import pkgutil
-
 from rich.console import Console
 
+from app.plugins.loader import PluginLoader
 from app.skills.base import BaseSkill
 
 console = Console()
@@ -23,40 +20,15 @@ class SkillManager:
         Discover every installed skill.
         """
 
-        package = importlib.import_module("app.skills")
+        self.skills = PluginLoader.load(
+            "app.skills",
+            BaseSkill,
+        )
 
-        for _, package_name, is_package in pkgutil.iter_modules(package.__path__):
-
-            if not is_package:
-                continue
-
-            package_path = f"app.skills.{package_name}"
-
-            package_module = importlib.import_module(package_path)
-
-            for _, module_name, _ in pkgutil.iter_modules(package_module.__path__):
-
-                if module_name.startswith("__"):
-                    continue
-
-                module = importlib.import_module(
-                    f"{package_path}.{module_name}"
-                )
-
-                for _, obj in inspect.getmembers(module, inspect.isclass):
-
-                    if (
-                        issubclass(obj, BaseSkill)
-                        and obj is not BaseSkill
-                    ):
-
-                        skill = obj()
-
-                        console.log(
-                            f"[green]Loaded Skill:[/green] {skill.name}"
-                        )
-
-                        self.skills.append(skill)
+        for skill in self.skills:
+            console.log(
+                f"[green]Loaded Skill:[/green] {skill.name}"
+            )
 
     def execute(self, task: dict):
         """
