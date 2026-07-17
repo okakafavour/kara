@@ -17,6 +17,82 @@ class RuleParser:
         command = original.lower()
 
         # ------------------------
+        # BATTERY STATUS
+        # ------------------------
+
+        battery_questions = [
+            "what's my battery",
+            "what is my battery",
+            "battery percentage",
+            "battery level",
+            "battery status",
+            "how much battery",
+        ]
+
+        if any(text in command for text in battery_questions):
+
+            return {
+                "intent": "battery_status",
+                "entities": {},
+            }
+
+        # ------------------------
+        # CPU STATUS
+        # ------------------------
+
+        cpu_questions = [
+            "cpu usage",
+            "cpu status",
+            "processor usage",
+            "how much cpu",
+        ]
+
+        if any(text in command for text in cpu_questions):
+
+            return {
+                "intent": "cpu_status",
+                "entities": {},
+            }
+
+        # ------------------------
+        # MEMORY STATUS
+        # ------------------------
+
+        memory_questions = [
+            "memory usage",
+            "ram usage",
+            "memory status",
+            "how much memory",
+            "how much ram",
+        ]
+
+        if any(text in command for text in memory_questions):
+
+            return {
+                "intent": "memory_status",
+                "entities": {},
+            }
+
+        # ------------------------
+        # DISK STATUS
+        # ------------------------
+
+        disk_questions = [
+            "disk usage",
+            "disk space",
+            "storage usage",
+            "storage left",
+            "free space",
+        ]
+
+        if any(text in command for text in disk_questions):
+
+            return {
+                "intent": "disk_status",
+                "entities": {},
+            }
+
+        # ------------------------
         # START WORKSPACE
         # ------------------------
 
@@ -33,8 +109,8 @@ class RuleParser:
             return {
                 "intent": "start_workspace",
                 "entities": {
-                    "workspace": "Backend Development"
-                }
+                    "workspace": "Backend Development",
+                },
             }
 
         # ------------------------
@@ -48,8 +124,8 @@ class RuleParser:
             return {
                 "intent": "open_application",
                 "entities": {
-                    "application": app
-                }
+                    "application": app,
+                },
             }
 
         # ------------------------
@@ -70,8 +146,8 @@ class RuleParser:
                     "intent": "remember",
                     "entities": {
                         "key": key,
-                        "value": value.strip()
-                    }
+                        "value": value.strip(),
+                    },
                 }
 
         # ------------------------
@@ -85,8 +161,8 @@ class RuleParser:
             return {
                 "intent": "recall",
                 "entities": {
-                    "key": key
-                }
+                    "key": key,
+                },
             }
 
         # ------------------------
@@ -95,5 +171,5 @@ class RuleParser:
 
         return {
             "intent": "unknown",
-            "entities": {}
+            "entities": {},
         }
