@@ -1,0 +1,34 @@
+[
+    {
+        "name": "Kara",
+        "description": "",
+        "path": "",
+        "github": "",
+        "backend": "Python",
+        "frontend": "",
+        "database": "",
+        "workspace": "",
+        "branch": "main",
+        "status": "active",
+        "last_task": "",
+        "next_task": "",
+        "notes": []
+    },
+    {
+        "name": "Uber",
+        "description": "",
+        "path": "/home/favour/projects/uber",
+        "github": "https://github.com/favour/uber",
+        "backend": "Go",
+        "frontend": "",
+        "database": "",
+        "workspace": "Backend Development",
+        "branch": "develop",
+        "status": "active",
+        "last_task": "Implement JWT authentication",
+        "next_task": "Implement refresh tokens",
+        "notes": [
+            "Use Redis for session caching."
+        ]
+    }
+]

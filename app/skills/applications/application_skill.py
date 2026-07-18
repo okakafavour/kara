@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 
+from app.execution.models.action_result import ActionResult
 from app.skills.base import BaseSkill
 
 
@@ -45,20 +46,63 @@ class ApplicationSkill(BaseSkill):
 
         executable = self.APPLICATIONS.get(target)
 
+        # ---------------------------------
+        # Unknown application
+        # ---------------------------------
+
         if executable is None:
-            return f"I don't know how to open '{target}'."
+
+            return ActionResult(
+                action="open_application",
+                success=False,
+                payload={
+                    "application": target,
+                },
+                error="unknown_application",
+            )
+
+        # ---------------------------------
+        # Application not installed
+        # ---------------------------------
 
         if shutil.which(executable) is None:
-            return f"{target.title()} is not installed."
+
+            return ActionResult(
+                action="open_application",
+                success=False,
+                payload={
+                    "application": target,
+                },
+                error="not_installed",
+            )
+
+        # ---------------------------------
+        # Launch application
+        # ---------------------------------
 
         try:
+
             subprocess.Popen(
                 [executable],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
 
-            return f"Opening {target}..."
+            return ActionResult(
+                action="open_application",
+                success=True,
+                payload={
+                    "application": target,
+                },
+            )
 
         except Exception as error:
-            return f"Failed to open {target}: {error}"
+
+            return ActionResult(
+                action="open_application",
+                success=False,
+                payload={
+                    "application": target,
+                },
+                error=str(error),
+            )

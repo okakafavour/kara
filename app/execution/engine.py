@@ -1,6 +1,5 @@
 from rich.console import Console
 
-from app.decision.engine import DecisionEngine
 from app.execution.models.result import ExecutionResult
 
 console = Console()
@@ -8,11 +7,10 @@ console = Console()
 
 class ExecutionEngine:
     """
-    Executes an execution plan.
+    Executes an already-approved execution plan.
 
-    Before executing any step, the DecisionEngine is asked to
-    evaluate the plan. If a decision rule blocks execution,
-    the engine returns immediately with the reason.
+    The DecisionEngine is responsible for deciding whether a
+    plan should execute. This class only performs the execution.
     """
 
     def __init__(
@@ -25,33 +23,10 @@ class ExecutionEngine:
         self.context = context
         self.session = session
 
-        # Think before executing
-        self.decision_engine = DecisionEngine()
-
     def execute(self, plan):
-
-        # ---------------------------------
-        # Evaluate the plan first
-        # ---------------------------------
-
-        decision = self.decision_engine.evaluate(
-            plan,
-            self.session,
-        )
-
-        if not decision.proceed:
-
-            return [
-                ExecutionResult(
-                    step=None,
-                    success=False,
-                    message=decision.question,
-                )
-            ]
-
-        # ---------------------------------
-        # Execute the plan
-        # ---------------------------------
+        """
+        Execute every step in the execution plan.
+        """
 
         results = []
 
@@ -73,43 +48,61 @@ class ExecutionEngine:
 
                 continue
 
-            message = skill.execute(
-                {
-                    "intent": step.intent,
-                    "entities": step.entities,
-                    "metadata": step.metadata,
-                }
-            )
+            try:
 
-            # ---------------------------------
-            # Update session
-            # ---------------------------------
-
-            self.update_session(step)
-
-            step.status = "completed"
-
-            results.append(
-                ExecutionResult(
-                    step=step,
-                    success=True,
-                    message=message,
+                message = skill.execute(
+                    {
+                        "intent": step.intent,
+                        "entities": step.entities,
+                        "metadata": step.metadata,
+                    }
                 )
-            )
+
+                # --------------------
+                # Update Session
+                # --------------------
+
+                self.update_session(step)
+
+                step.status = "completed"
+
+                results.append(
+                    ExecutionResult(
+                        step=step,
+                        success=True,
+                        message=message,
+                    )
+                )
+
+            except Exception as e:
+
+                step.status = "failed"
+
+                results.append(
+                    ExecutionResult(
+                        step=step,
+                        success=False,
+                        message=str(e),
+                    )
+                )
+
+        # Mark plan complete if every step succeeded
+        if all(result.success for result in results):
+            plan.completed = True
 
         return results
 
     def update_session(self, step):
         """
-        Keep Kara's session state synchronized with what
-        was actually executed.
+        Keep Kara's session synchronized with
+        successfully executed steps.
         """
 
         if step.intent == "open_application":
 
-            app = step.entities["application"]
-
-            self.session.application_started(app)
+            self.session.application_started(
+                step.entities["application"]
+            )
 
         elif step.intent == "browser_open":
 
@@ -123,6 +116,6 @@ class ExecutionEngine:
 
         elif step.intent == "start_workspace":
 
-            workspace = step.entities["workspace"]
-
-            self.session.workspace_started(workspace)
+            self.session.workspace_started(
+                step.entities["workspace"]
+            )

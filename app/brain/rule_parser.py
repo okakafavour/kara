@@ -114,6 +114,47 @@ class RuleParser:
             }
 
         # ------------------------
+        # PROJECT COMMANDS
+        # ------------------------
+
+        project_prefixes = [
+            "continue ",
+            "resume ",
+            "work on ",
+            "switch to ",
+        ]
+
+        for prefix in project_prefixes:
+
+            if command.startswith(prefix):
+
+                project = original[len(prefix):].strip()
+
+                return {
+                    "intent": "continue_project",
+                    "entities": {
+                        "project": project,
+                    },
+                }
+
+        # Handle:
+        # open Uber project
+
+        if (
+            command.startswith("open ")
+            and command.endswith(" project")
+        ):
+
+            project = original[5:-8].strip()
+
+            return {
+                "intent": "continue_project",
+                "entities": {
+                    "project": project,
+                },
+            }
+
+        # ------------------------
         # OPEN APPLICATION
         # ------------------------
 
